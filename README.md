@@ -2,7 +2,7 @@
 
 A production-quality website and learning platform for a programming education institute — public marketing site, course catalogue, enrollment & payments, a full student LMS (dashboard, lessons, quizzes, assignments, certificates) and an admin panel.
 
-Built with **Next.js 15 (App Router) · React 19 · TypeScript · Tailwind CSS v4 · better-sqlite3**.
+Built with **Next.js 15 (App Router) · React 19 · TypeScript · Tailwind CSS v4**.
 
 ---
 
@@ -10,8 +10,7 @@ Built with **Next.js 15 (App Router) · React 19 · TypeScript · Tailwind CSS v
 
 ```bash
 npm install
-npm run db:reset     # creates data/kwikstudy.db and seeds all content
-npm run dev          # http://localhost:3000
+npm run dev          # http://localhost:3000 — demo content is built in
 ```
 
 Production:
@@ -45,7 +44,7 @@ Environment variables (all optional):
 | `PAYMENT_WEBHOOK_SECRET`        | HMAC secret for the payment provider (set a real value in production) |
 | `KS_DATA_DIR`                   | Override the SQLite storage directory (defaults below)                |
 
-**Storage model:** the database lives in `<project>/data/` when the filesystem is writable, and falls back to `/tmp/kwikstudy/` on read-only serverless filesystems. `/tmp` is ephemeral per serverless instance: the demo content is re-seeded on every cold start (so the site always works), but user-created data (registrations, purchases, progress) does not survive instance restarts or replicate across instances. That is fine for a demo; for real production use, swap `src/lib/db.ts` for a managed database — Turso/LibSQL is a near drop-in for this schema, and the repository layer in `src/lib/queries.ts` is the single place queries live.
+**Demo data model:** there is no database. All content and demo state lives in an in-memory store (`src/lib/store.ts`) built from the curriculum modules in `src/content/`; sessions are stateless signed cookies so logins survive across serverless instances. Writes (enrollments, progress, enquiries, orders) mutate memory and reset when the instance restarts or the app redeploys — the right lifetime for a demo. For real production use, replace `src/lib/store.ts` with a database client: `src/lib/queries.ts` is the single read layer every page and action goes through.
 
 ---
 
@@ -88,8 +87,9 @@ src/
     sitemap.ts, robots.ts, icon.svg, not-found, error
   components/          # design-system + feature components
   lib/
-    db.ts              # better-sqlite3 singleton + row types (auto-seeds when fresh)
-    schema.ts          # normalized relational schema (source of truth)
+    store.ts           # in-memory data store + row types (demo state)
+    queries.ts         # the only read layer above the store
+    session.ts         # stateless signed-cookie sessions + guards
     queries.ts         # read layer (catalog, curriculum, progress)
     session.ts         # cookie sessions (httpOnly), guards
     auth-core.ts       # scrypt hashing, tokens, HMAC signing
@@ -97,8 +97,7 @@ src/
     highlight.ts       # zero-dependency syntax highlighter
     blocks.ts          # lesson content block model
     actions/           # server actions: auth, enquiry, checkout, learn, profile, admin
-src/db/seed/           # seed core + per-course curriculum content (authoring format)
-scripts/seed.ts        # CLI wrapper that runs the seed against the local database
+src/content/           # per-course curriculum content (authoring format)
 ```
 
 ### Data model (normalized, relational)
@@ -120,7 +119,7 @@ No giant JSON blobs — relationships are real foreign keys with indexes; lesson
 
 ### Adding content
 
-Curriculum lives in `src/db/seed/courses/*.ts` using a small authoring DSL (`t`, `c`, `tip`, `vid`, `obj`, quiz + assignment builders). Add a course file, register it in `src/db/seed/index.ts`, run `npm run db:reset` (or just redeploy — fresh databases seed themselves). The site (catalogue, detail pages, search, sitemap, admin) picks it up automatically.
+Curriculum lives in `src/content/courses/*.ts` using a small authoring DSL (`t`, `c`, `tip`, `vid`, `obj`, quiz + assignment builders). Add a course file, register it in `src/lib/store.ts`, and the site (catalogue, detail pages, search, sitemap, admin) picks it up automatically.
 
 ### Honest-by-design
 

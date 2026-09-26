@@ -1,4 +1,4 @@
-import { db } from "@/lib/db";
+import { courseTitleMap, enquiryStatusCounts, listEnquiries } from "@/lib/queries";
 import { EnquiryStatusSelect } from "@/components/EnquiryStatusSelect";
 import { formatDateTime } from "@/lib/site";
 import { EmptyState } from "@/components/ui";
@@ -10,23 +10,9 @@ export default async function AdminEnquiriesPage({
   searchParams: Promise<{ status?: string }>;
 }) {
   const { status } = await searchParams;
-  const rows = (
-    status && ["new", "contacted", "closed"].includes(status)
-      ? db.prepare("SELECT * FROM enquiries WHERE status = ? ORDER BY created_at DESC").all(status)
-      : db.prepare("SELECT * FROM enquiries ORDER BY created_at DESC").all()
-  ) as {
-    id: string; name: string; email: string; phone: string | null; topic: string;
-    course_id: string | null; preferred_contact: string; message: string; status: string; created_at: string;
-  }[];
-
-  const courses = new Map(
-    (db.prepare("SELECT id, title FROM courses").all() as { id: string; title: string }[]).map((c) => [c.id, c.title])
-  );
-  const counts = {
-    new: (db.prepare("SELECT COUNT(*) n FROM enquiries WHERE status = 'new'").get() as { n: number }).n,
-    contacted: (db.prepare("SELECT COUNT(*) n FROM enquiries WHERE status = 'contacted'").get() as { n: number }).n,
-    closed: (db.prepare("SELECT COUNT(*) n FROM enquiries WHERE status = 'closed'").get() as { n: number }).n,
-  };
+  const rows = listEnquiries(status && ["new", "contacted", "closed"].includes(status) ? status : undefined);
+  const courses = courseTitleMap();
+  const counts = enquiryStatusCounts();
 
   return (
     <div className="mx-auto max-w-5xl">

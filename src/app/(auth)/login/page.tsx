@@ -12,6 +12,9 @@ export default async function LoginPage({
 }) {
   const { next } = await searchParams;
   const user = await getCurrentUser();
-  if (user) redirect(safeNext(next));
+  if (user) {
+    const target = next || (user.role === "admin" ? "/admin" : "/dashboard");
+    redirect(target);
+  }
   return <LoginForm next={safeNext(next, "")} />;
 }

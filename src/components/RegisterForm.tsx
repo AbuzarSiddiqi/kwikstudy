@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useActionState } from "react";
 import { registerAction, type AuthState } from "@/lib/actions/auth";
 import { Alert } from "@/components/Icons";
+import { PasswordInput } from "@/components/PasswordInput";
 
 export function RegisterForm({ next }: { next?: string }) {
   const [state, action, pending] = useActionState<AuthState, FormData>(registerAction, null);
@@ -42,13 +43,13 @@ export function RegisterForm({ next }: { next?: string }) {
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="reg-password" className="label">Password</label>
-            <input id="reg-password" name="password" type="password" className="input" autoComplete="new-password" required placeholder="8+ characters" />
+            <PasswordInput id="reg-password" name="password" autoComplete="new-password" required placeholder="8+ characters" />
             <p className="field-hint">At least 8 characters, with letters and numbers.</p>
             {state?.fieldErrors?.password && <p className="field-error">{state.fieldErrors.password}</p>}
           </div>
           <div>
             <label htmlFor="reg-confirm" className="label">Confirm password</label>
-            <input id="reg-confirm" name="confirm" type="password" className="input" autoComplete="new-password" required placeholder="Repeat password" />
+            <PasswordInput id="reg-confirm" name="confirm" autoComplete="new-password" required placeholder="Repeat password" />
             {state?.fieldErrors?.confirm && <p className="field-error">{state.fieldErrors.confirm}</p>}
           </div>
         </div>

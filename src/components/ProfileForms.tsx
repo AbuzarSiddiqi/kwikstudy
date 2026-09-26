@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { updateProfile, changePassword, type ProfileState } from "@/lib/actions/profile";
 import { Check, Alert } from "@/components/Icons";
+import { PasswordInput } from "@/components/PasswordInput";
 
 function FormMessage({ state }: { state: ProfileState }) {
   if (!state) return null;
@@ -57,17 +58,17 @@ export function PasswordForm() {
       <div className="grid gap-4 sm:grid-cols-3">
         <div>
           <label htmlFor="pw-current" className="label">Current</label>
-          <input id="pw-current" name="current" type="password" className="input" autoComplete="current-password" required />
+          <PasswordInput id="pw-current" name="current" autoComplete="current-password" required />
           {state?.fieldErrors?.current && <p className="field-error">{state.fieldErrors.current}</p>}
         </div>
         <div>
           <label htmlFor="pw-next" className="label">New</label>
-          <input id="pw-next" name="next" type="password" className="input" autoComplete="new-password" required />
+          <PasswordInput id="pw-next" name="next" autoComplete="new-password" required />
           {state?.fieldErrors?.next && <p className="field-error">{state.fieldErrors.next}</p>}
         </div>
         <div>
           <label htmlFor="pw-confirm" className="label">Confirm new</label>
-          <input id="pw-confirm" name="confirm" type="password" className="input" autoComplete="new-password" required />
+          <PasswordInput id="pw-confirm" name="confirm" autoComplete="new-password" required />
           {state?.fieldErrors?.confirm && <p className="field-error">{state.fieldErrors.confirm}</p>}
         </div>
       </div>

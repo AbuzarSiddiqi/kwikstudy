@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { getInstructors } from "@/lib/queries";
-import { parseJson } from "@/lib/db";
+import { parseJson } from "@/lib/store";
 import { Breadcrumb } from "@/components/ui";
 import { initials } from "@/lib/site";
 

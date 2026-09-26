@@ -1,19 +1,11 @@
-import { db } from "@/lib/db";
+import { paymentsWithJoins } from "@/lib/queries";
 import { formatDateTime, rupees } from "@/lib/site";
 import { EmptyState } from "@/components/ui";
 import { ArrowRight } from "@/components/Icons";
 
 export default async function AdminPaymentsPage() {
-  const rows = db.prepare(
-    `SELECT p.*, o.id AS order_id, o.coupon_code, u.name AS student, u.email AS email, c.title AS course
-     FROM payments p
-     JOIN orders o ON o.id = p.order_id
-     JOIN users u ON u.id = o.user_id
-     JOIN courses c ON c.id = o.course_id
-     ORDER BY p.paid_at DESC`
-  ).all() as { id: string; order_id: string; student: string; email: string; course: string; amount: number; method: string; status: string; paid_at: string; coupon_code: string | null }[];
-
-  const captured = rows.filter((r) => r.status === "captured");
+  const rows = paymentsWithJoins();
+  const captured = rows;
 
   return (
     <div className="mx-auto max-w-5xl">

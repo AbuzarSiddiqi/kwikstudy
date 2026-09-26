@@ -1,16 +1,10 @@
-import { db } from "@/lib/db";
+import { studentRows } from "@/lib/queries";
 import { formatDate, rupees } from "@/lib/site";
 import { EmptyState } from "@/components/ui";
 import { Users } from "@/components/Icons";
 
 export default async function AdminStudentsPage() {
-  const students = db.prepare(
-    `SELECT u.*,
-       (SELECT COUNT(*) FROM enrollments e WHERE e.user_id = u.id) AS enrollments,
-       (SELECT COUNT(*) FROM certificates ct WHERE ct.user_id = u.id) AS certificates,
-       (SELECT COALESCE(SUM(o.total),0) FROM orders o WHERE o.user_id = u.id AND o.status = 'paid') AS spent
-     FROM users u WHERE u.role = 'student' ORDER BY u.created_at DESC`
-  ).all() as { id: string; name: string; email: string; phone: string | null; created_at: string; enrollments: number; certificates: number; spent: number }[];
+  const students = studentRows();
 
   return (
     <div className="mx-auto max-w-5xl">

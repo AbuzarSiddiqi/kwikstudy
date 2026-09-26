@@ -3,7 +3,11 @@ import { notFound, redirect } from "next/navigation";
 import {
   getCourseBySlug, getCurriculum, getCourseProgress, isEnrolled,
 } from "@/lib/queries";
-import { db, parseJson, type LessonRow } from "@/lib/db";
+import { parseJson } from "@/lib/store";
+import {
+  assignmentForLesson, getCompletedLessonIds, latestAttemptFor, quizForLesson,
+  quizQuestionsWithGrading, resourcesForLesson, submissionFor,
+} from "@/lib/queries";
 import { requireUser } from "@/lib/session";
 import { LessonContent } from "@/components/LessonContent";
 import { ViewPing, LessonFooterNav, AssignmentSubmitForm, LessonCompleteButton } from "@/components/LearnClient";
@@ -41,29 +45,20 @@ export default async function LearnLessonPage({ params }: { params: Params }) {
   const isPreviewAccess = !enrolled && lesson.is_free_preview === 1;
   if (!enrolled && !isPreviewAccess) redirect(`/courses/${slug}`);
 
-  const completedIds = new Set(
-    (db.prepare("SELECT lesson_id FROM lesson_progress WHERE user_id = ? AND course_id = ? AND status = 'completed'")
-      .all(user.id, course.id) as { lesson_id: string }[]).map((r) => r.lesson_id)
-  );
+  const completedIds = getCompletedLessonIds(user.id, course.id);
   const isCompleted = completedIds.has(lesson.id);
   const prev = position > 0 ? flat[position - 1] : null;
   const next = position < flat.length - 1 ? flat[position + 1] : null;
 
   const blocks = parseJson<Block[]>(lesson.content, []);
-  const quiz = db.prepare("SELECT * FROM quizzes WHERE lesson_id = ?").get(lesson.id) as { id: string; title: string; pass_score: number } | undefined;
+  const quiz = quizForLesson(lesson.id);
   const quizQuestions = quiz
-    ? (db.prepare("SELECT id, question FROM quiz_questions WHERE quiz_id = ? ORDER BY idx").all(quiz.id) as { id: string; question: string }[])
-        .map((q) => ({ ...q, options: (db.prepare("SELECT text FROM quiz_options WHERE question_id = ? ORDER BY idx").all(q.id) as { text: string }[]).map((o) => o.text) }))
+    ? quizQuestionsWithGrading(quiz.id).map((q) => ({ id: q.id, question: q.question, options: q.options }))
     : [];
-  const assignment = db.prepare("SELECT * FROM assignments WHERE lesson_id = ?").get(lesson.id) as { id: string; title: string; brief: string } | undefined;
-  const submission = assignment
-    ? db.prepare("SELECT submitted_at FROM assignment_submissions WHERE assignment_id = ? AND user_id = ?").get(assignment.id, user.id) as { submitted_at: string } | undefined
-    : undefined;
-  const lastAttempt = quiz
-    ? (db.prepare("SELECT score, total, created_at FROM quiz_attempts WHERE quiz_id = ? AND user_id = ? ORDER BY created_at DESC LIMIT 1")
-        .get(quiz.id, user.id) as { score: number; total: number; created_at: string } | undefined) ?? null
-    : null;
-  const resources = db.prepare("SELECT * FROM lesson_resources WHERE lesson_id = ?").all(lesson.id) as { id: string; title: string; kind: string; href: string }[];
+  const assignment = assignmentForLesson(lesson.id);
+  const submission = assignment ? submissionFor(assignment.id, user.id) : undefined;
+  const lastAttempt = quiz ? latestAttemptFor(quiz.id, user.id) : null;
+  const resources = resourcesForLesson(lesson.id);
 
   /* sidebar module open state: the module containing current lesson */
   const currentModuleId = mod.id;

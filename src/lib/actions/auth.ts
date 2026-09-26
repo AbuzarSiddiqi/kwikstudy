@@ -1,30 +1,29 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { db } from "@/lib/db";
+import { createUser, getUserByEmail } from "@/lib/queries";
 import { hashPassword, verifyPassword } from "@/lib/auth-core";
-import { createSession, safeNext } from "@/lib/session";
+import { createSession } from "@/lib/session";
 
 export type AuthState = { error?: string; fieldErrors?: Record<string, string> } | null;
 
 export async function loginAction(_prev: AuthState, formData: FormData): Promise<AuthState> {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
-  const next = safeNext(String(formData.get("next") ?? ""));
+  const rawNext = String(formData.get("next") ?? "");
+  const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "";
 
   if (!email) return { fieldErrors: { email: "Email is required" } };
   if (!password) return { fieldErrors: { password: "Password is required" } };
 
-  const user = db.prepare("SELECT * FROM users WHERE email = ?").get(email) as
-    | { id: string; password_hash: string; name: string }
-    | undefined;
-
+  const user = getUserByEmail(email);
   if (!user || !verifyPassword(password, user.password_hash)) {
     return { error: "The email or password is incorrect. Please try again." };
   }
 
   await createSession(user.id);
-  redirect(next);
+  // Admins go straight to the management panel unless a specific page was requested.
+  redirect(next || (user.role === "admin" ? "/admin" : "/dashboard"));
 }
 
 export async function registerAction(_prev: AuthState, formData: FormData): Promise<AuthState> {
@@ -34,7 +33,7 @@ export async function registerAction(_prev: AuthState, formData: FormData): Prom
   const password = String(formData.get("password") ?? "");
   const confirm = String(formData.get("confirm") ?? "");
   const accept = formData.get("accept");
-  const next = safeNext(String(formData.get("next") ?? ""));
+  const next = safeNextPath(String(formData.get("next") ?? ""));
 
   const fieldErrors: Record<string, string> = {};
   if (name.length < 2) fieldErrors.name = "Please enter your full name";
@@ -47,13 +46,14 @@ export async function registerAction(_prev: AuthState, formData: FormData): Prom
 
   if (Object.keys(fieldErrors).length) return { fieldErrors };
 
-  const existing = db.prepare("SELECT id FROM users WHERE email = ?").get(email);
-  if (existing) return { fieldErrors: { email: "An account with this email already exists. Try logging in." } };
+  if (getUserByEmail(email)) return { fieldErrors: { email: "An account with this email already exists. Try logging in." } };
 
-  const id = `usr_${crypto.randomUUID().slice(0, 12)}`;
-  db.prepare("INSERT INTO users (id, email, password_hash, name, role, phone, created_at) VALUES (?,?,?,?,'student',?,?)")
-    .run(id, email, hashPassword(password), name, phone || null, new Date().toISOString());
+  const user = createUser({ email, passwordHash: hashPassword(password), name, phone: phone || null });
 
-  await createSession(id);
+  await createSession(user.id);
   redirect(next || "/dashboard?welcome=1");
+}
+
+function safeNextPath(raw: string): string {
+  return raw.startsWith("/") && !raw.startsWith("//") ? raw : "";
 }

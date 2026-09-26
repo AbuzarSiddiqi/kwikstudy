@@ -1,32 +1,20 @@
-import { db } from "@/lib/db";
+import { adminStats, enrollmentCountsByCourse, listEnquiries, paymentsWithJoins } from "@/lib/queries";
 import { formatDate, formatDateTime, rupees } from "@/lib/site";
-import { Message, Users, BookOpen, ArrowRight } from "@/components/Icons";
+import { BookOpen, Users, ArrowRight } from "@/components/Icons";
 
 export default async function AdminOverview() {
-  const count = (sql: string, ...args: unknown[]) => (db.prepare(sql).get(...args) as { n: number }).n;
+  const stats = adminStats();
 
-  const stats = [
-    { label: "Published courses", value: count("SELECT COUNT(*) n FROM courses WHERE status = 'published'"), icon: <BookOpen width={18} height={18} /> },
-    { label: "Registered users", value: count("SELECT COUNT(*) n FROM users WHERE role = 'student'"), icon: <Users width={18} height={18} /> },
-    { label: "Active enrollments", value: count("SELECT COUNT(*) n FROM enrollments WHERE status = 'active'"), icon: <Users width={18} height={18} /> },
-    { label: "Revenue (captured)", value: rupees((db.prepare("SELECT COALESCE(SUM(amount),0) n FROM payments WHERE status = 'captured'").get() as { n: number }).n), icon: <ArrowRight width={18} height={18} /> },
+  const cards = [
+    { label: "Published courses", value: String(stats.publishedCourses), icon: <BookOpen width={18} height={18} /> },
+    { label: "Registered users", value: String(stats.students), icon: <Users width={18} height={18} /> },
+    { label: "Active enrollments", value: String(stats.activeEnrollments), icon: <Users width={18} height={18} /> },
+    { label: "Revenue (captured)", value: rupees(stats.revenue), icon: <ArrowRight width={18} height={18} /> },
   ];
 
-  const recentEnquiries = db.prepare(
-    "SELECT * FROM enquiries ORDER BY created_at DESC LIMIT 5"
-  ).all() as { id: string; name: string; topic: string; status: string; created_at: string }[];
-
-  const recentPayments = db.prepare(
-    `SELECT p.*, o.id AS order_id, u.name AS student, c.title AS course
-     FROM payments p JOIN orders o ON o.id = p.order_id JOIN users u ON u.id = o.user_id JOIN courses c ON c.id = o.course_id
-     ORDER BY p.paid_at DESC LIMIT 5`
-  ).all() as { id: string; student: string; course: string; amount: number; method: string; paid_at: string }[];
-
-  const topCourses = db.prepare(
-    `SELECT c.title, COUNT(e.id) AS enrollments
-     FROM courses c LEFT JOIN enrollments e ON e.course_id = c.id
-     GROUP BY c.id ORDER BY enrollments DESC LIMIT 5`
-  ).all() as { title: string; enrollments: number }[];
+  const recentEnquiries = listEnquiries().slice(0, 5);
+  const recentPayments = paymentsWithJoins().slice(0, 5);
+  const topCourses = enrollmentCountsByCourse().slice(0, 5);
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -36,7 +24,7 @@ export default async function AdminOverview() {
       </header>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((s) => (
+        {cards.map((s) => (
           <div key={s.label} className="card p-5">
             <span className="flex h-9 w-9 items-center justify-center rounded-md bg-paper-deep text-ink-500">{s.icon}</span>
             <p className="mt-3 font-display text-[1.45rem] font-bold tabular">{s.value}</p>

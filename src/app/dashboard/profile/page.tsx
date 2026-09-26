@@ -1,13 +1,13 @@
 import { requireUser } from "@/lib/session";
-import { db } from "@/lib/db";
 import { ProfileForm, PasswordForm } from "@/components/ProfileForms";
+import { countUserCertificates, countUserEnrollments } from "@/lib/queries";
 import { formatDate } from "@/lib/site";
 import { ShieldCheck } from "@/components/Icons";
 
 export default async function ProfilePage() {
   const user = await requireUser();
-  const enrolled = db.prepare("SELECT COUNT(*) n FROM enrollments WHERE user_id = ?").get(user.id) as { n: number };
-  const certs = db.prepare("SELECT COUNT(*) n FROM certificates WHERE user_id = ?").get(user.id) as { n: number };
+  const enrolled = { n: countUserEnrollments(user.id) };
+  const certs = { n: countUserCertificates(user.id) };
 
   return (
     <div className="mx-auto max-w-4xl">

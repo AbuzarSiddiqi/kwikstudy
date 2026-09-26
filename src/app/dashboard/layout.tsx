@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/session";
 import { Logo } from "@/components/Logo";
-import { Logout, Home, BookOpen, ListChecks, Briefcase, Award, User, Message } from "@/components/Icons";
+import { Logout, Home, BookOpen, ListChecks, Briefcase, Award, User, Message, ShieldCheck } from "@/components/Icons";
 
 const NAV = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
@@ -24,6 +24,15 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <Link href="/"><Logo dark /></Link>
         </div>
         <nav aria-label="Dashboard" className="flex-1 space-y-1 overflow-y-auto px-3 py-5">
+          {user.role === "admin" && (
+            <Link
+              href="/admin"
+              className="mb-3 flex items-center gap-3 rounded-md border border-accent-700 bg-accent-600/15 px-3 py-2.5 text-[0.87rem] font-semibold text-accent-200 transition-colors hover:bg-accent-600/25"
+            >
+              <ShieldCheck width={17} height={17} />
+              Admin panel
+            </Link>
+          )}
           {NAV.map((item) => (
             <Link
               key={item.href}

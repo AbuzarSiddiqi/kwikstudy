@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/session";
-import { db } from "@/lib/db";
+import { assignmentsForUser } from "@/lib/queries";
 import { EmptyState } from "@/components/ui";
 import { ListChecks, Check, ArrowRight } from "@/components/Icons";
 import { formatDate } from "@/lib/site";
@@ -8,23 +8,7 @@ import { formatDate } from "@/lib/site";
 export default async function AssignmentsPage() {
   const user = await requireUser();
 
-  const rows = db
-    .prepare(
-      `SELECT a.id, a.title, a.brief, a.max_score, c.title AS course_title, c.slug AS course_slug, l.id AS lesson_id,
-              s.submitted_at,
-              (SELECT lp.status FROM lesson_progress lp WHERE lp.user_id = ? AND lp.lesson_id = l.id) AS lesson_status
-       FROM assignments a
-       JOIN courses c ON c.id = a.course_id
-       JOIN lessons l ON l.id = a.lesson_id
-       LEFT JOIN assignment_submissions s ON s.assignment_id = a.id AND s.user_id = ?
-       WHERE a.course_id IN (SELECT course_id FROM enrollments WHERE user_id = ?)
-       ORDER BY s.submitted_at IS NOT NULL, s.submitted_at DESC`
-    )
-    .all(user.id, user.id, user.id) as {
-      id: string; title: string; brief: string; max_score: number;
-      course_title: string; course_slug: string; lesson_id: string;
-      submitted_at: string | null; lesson_status: string | null;
-    }[];
+  const rows = assignmentsForUser(user.id);
 
   const pending = rows.filter((r) => !r.submitted_at);
   const submitted = rows.filter((r) => r.submitted_at);

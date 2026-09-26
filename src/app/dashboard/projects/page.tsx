@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/session";
 import { getEnrolledCourses, getCourseProgress } from "@/lib/queries";
-import { parseJson } from "@/lib/db";
+import { parseJson } from "@/lib/store";
 import { EmptyState } from "@/components/ui";
 import { Briefcase, Check, ArrowRight } from "@/components/Icons";
 

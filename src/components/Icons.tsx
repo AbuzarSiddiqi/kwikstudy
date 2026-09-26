@@ -43,3 +43,4 @@ export const Layers = (p: P) => <svg {...base(p)}><path d="m12 3.5 8.5 4.5L12 12
 export const Target = (p: P) => <svg {...base(p)}><circle cx="12" cy="12" r="8.5" /><circle cx="12" cy="12" r="4.5" /><circle cx="12" cy="12" r="0.8" fill="currentColor" stroke="none" /></svg>;
 export const Compass = (p: P) => <svg {...base(p)}><circle cx="12" cy="12" r="8.5" /><path d="m15.5 8.5-2 5-5 2 2-5 5-2Z" /></svg>;
 export const Eye = (p: P) => <svg {...base(p)}><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" /><circle cx="12" cy="12" r="3" /></svg>;
+export const EyeOff = (p: P) => <svg {...base(p)}><path d="M4 4l16 16" /><path d="M10.6 5.9A9.8 9.8 0 0 1 12 5.8c6 0 9.5 6.2 9.5 6.2a17 17 0 0 1-2.5 3.3M6.6 6.9C4 8.5 2.5 12 2.5 12S6 18.2 12 18.2c1.3 0 2.5-.3 3.5-.8" /><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" /></svg>;

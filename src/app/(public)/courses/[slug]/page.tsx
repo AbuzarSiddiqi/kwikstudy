@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getCourseBySlug, getCurriculum, getCourseStats, isEnrolled, getCourseProgress } from "@/lib/queries";
 import { getCurrentUser } from "@/lib/session";
-import { parseJson } from "@/lib/db";
+import { parseJson } from "@/lib/store";
 import { Breadcrumb, StatLine, ProgressBar } from "@/components/ui";
 import { CoverArt, courseGlyph } from "@/components/CoverArt";
 import { Check, ChevronDown, Clock, FileText, Play, User, ArrowRight, Award, Lock, Target } from "@/components/Icons";

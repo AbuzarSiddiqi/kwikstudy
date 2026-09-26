@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { getCertificate } from "@/lib/queries";
 import { Breadcrumb } from "@/components/ui";
 import { CoverArt, courseGlyph } from "@/components/CoverArt";
-import { db } from "@/lib/db";
 import { ShieldCheck, X } from "@/components/Icons";
 import { formatDate, site } from "@/lib/site";
 
@@ -19,11 +18,10 @@ export default async function VerifyPage({ params }: { params: Params }) {
   const cert = getCertificate(certId.toUpperCase());
   if (!cert) notFound();
 
-  const course = db.prepare("SELECT * FROM courses WHERE id = ?").get(cert.course_id) as
-    | { title: string; cover_code: string; cover_variant: string; category_id: string } | undefined;
-  const cat = course
-    ? (db.prepare("SELECT name FROM course_categories WHERE id = ?").get(cert.course_id) as { name: string } | undefined)?.name
+  const course = cert.course_slug
+    ? { title: cert.course_title, cover_code: cert.cover_code, cover_variant: cert.cover_variant }
     : undefined;
+  const cat = cert.category_name;
 
   const valid = cert.status === "valid";
 

@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/session";
 import {
-  getEnrolledCourses, getCourseProgress, getLearningActivity, getPublishedCourses, isEnrolled,
+  getEnrolledCourses, getCourseProgress, getLearningActivity, getPublishedCourses,
+  isEnrolled, pendingAssignmentsForUser, countUserCertificates,
 } from "@/lib/queries";
-import { db } from "@/lib/db";
 import { ProgressBar, EmptyState } from "@/components/ui";
-import { ArrowRight, BookOpen, Award, ListChecks, Spark } from "@/components/Icons";
+import { ArrowRight, BookOpen, Award, ListChecks, Spark, ShieldCheck } from "@/components/Icons";
 import { formatDate } from "@/lib/site";
 
 export default async function DashboardHome() {
@@ -22,27 +22,12 @@ export default async function DashboardHome() {
   const activity = getLearningActivity(user.id);
 
   /* pending assignments across enrolled courses */
-  const assignments = active.length
-    ? (db
-        .prepare(
-          `SELECT a.id, a.title, a.brief, c.title AS course_title, c.slug AS course_slug, l.id AS lesson_id
-           FROM assignments a
-           JOIN courses c ON c.id = a.course_id
-           JOIN lessons l ON l.id = a.lesson_id
-           WHERE a.course_id IN (SELECT course_id FROM enrollments WHERE user_id = ? AND status = 'active')
-           ORDER BY a.id LIMIT 3`
-        )
-        .all(user.id) as { id: string; title: string; brief: string; course_title: string; course_slug: string; lesson_id: string }[])
-    : [];
-  const submitted = new Set(
-    (db.prepare(`SELECT assignment_id FROM assignment_submissions WHERE user_id = ?`).all(user.id) as { assignment_id: string }[]).map(r => r.assignment_id)
-  );
-  const pendingAssignments = assignments.filter((a) => !submitted.has(a.id));
+  const pendingAssignments = pendingAssignmentsForUser(user.id);
 
   /* recommended: first 2 published courses not enrolled */
   const recommended = getPublishedCourses().filter((c) => !isEnrolled(user.id, c.id)).slice(0, 2);
 
-  const certificates = db.prepare("SELECT COUNT(*) n FROM certificates WHERE user_id = ?").get(user.id) as { n: number };
+  const certificates = { n: countUserCertificates(user.id) };
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -58,6 +43,21 @@ export default async function DashboardHome() {
               : "Your learning record lives here. Enroll in a course to begin."}
         </p>
       </header>
+
+      {user.role === "admin" && (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-[10px] border border-accent-200 bg-accent-50 px-5 py-4">
+          <div className="flex items-center gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-accent-600 text-white">
+              <ShieldCheck width={17} height={17} />
+            </span>
+            <div>
+              <p className="font-display text-[0.92rem] font-semibold text-ink-900">You're signed in as an administrator</p>
+              <p className="text-[0.82rem] text-ink-500">Manage enquiries, students, courses and payments from the admin panel.</p>
+            </div>
+          </div>
+          <Link href="/admin" className="btn btn-accent btn-sm">Open admin panel <ArrowRight width={14} height={14} /></Link>
+        </div>
+      )}
 
       {enrolled.length === 0 ? (
         <EmptyState

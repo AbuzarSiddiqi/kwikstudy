@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getInstructorBySlug } from "@/lib/queries";
-import { parseJson } from "@/lib/db";
+import { parseJson } from "@/lib/store";
 import { Breadcrumb, EmptyState } from "@/components/ui";
 import { CourseCard } from "@/components/CourseCard";
 import { initials } from "@/lib/site";

@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { getCourseBySlug, getCourseStats, isEnrolled } from "@/lib/queries";
-import { db } from "@/lib/db";
+import { getCourseBySlug, getCourseStats, isEnrolled, instructorNameForCourse } from "@/lib/queries";
 import { getCurrentUser } from "@/lib/session";
 import { CheckoutClient } from "@/components/CheckoutClient";
 import { Breadcrumb } from "@/components/ui";
@@ -22,9 +21,7 @@ export default async function CheckoutPage({ params }: { params: Params }) {
   if (course.status === "waitlist") redirect(`/courses/${slug}`);
 
   const stats = getCourseStats(course.id);
-  const instructorRow = db
-    .prepare("SELECT i.name FROM course_instructors ci JOIN instructors i ON i.id = ci.instructor_id WHERE ci.course_id = ? LIMIT 1")
-    .get(course.id) as { name: string } | undefined;
+  const instructorRow = { name: instructorNameForCourse(course.id) };
 
   return (
     <>

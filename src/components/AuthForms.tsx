@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useActionState } from "react";
 import { loginAction, type AuthState } from "@/lib/actions/auth";
 import { Alert } from "@/components/Icons";
+import { PasswordInput } from "@/components/PasswordInput";
 
 export function LoginForm({ next }: { next?: string }) {
   const [state, action, pending] = useActionState<AuthState, FormData>(loginAction, null);
@@ -37,7 +38,7 @@ export function LoginForm({ next }: { next?: string }) {
               Forgot it? <a href="mailto:support@kwikstudy.in" className="link-underline">Contact support</a>
             </span>
           </div>
-          <input id="login-password" name="password" type="password" className="input" autoComplete="current-password" required placeholder="••••••••" />
+          <PasswordInput id="login-password" name="password" autoComplete="current-password" required placeholder="••••••••" />
           {state?.fieldErrors?.password && <p className="field-error">{state.fieldErrors.password}</p>}
         </div>
         <input type="hidden" name="next" value={next ?? ""} />

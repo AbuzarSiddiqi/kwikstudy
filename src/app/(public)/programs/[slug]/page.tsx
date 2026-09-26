@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getProgramBySlug, getCourseStats } from "@/lib/queries";
-import { parseJson } from "@/lib/db";
+import { parseJson } from "@/lib/store";
 import { Breadcrumb } from "@/components/ui";
 import { CoverArt, courseGlyph } from "@/components/CoverArt";
 import { ArrowRight, Check, ChevronDown, Clock, FileText, Play } from "@/components/Icons";

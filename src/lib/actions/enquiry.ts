@@ -1,7 +1,6 @@
 "use server";
 
-import { db } from "@/lib/db";
-import { newId } from "@/lib/auth-core";
+import { courseIsPublished, insertEnquiry } from "@/lib/queries";
 
 export type EnquiryState =
   | { ok: true; message: string }
@@ -28,19 +27,23 @@ export async function submitEnquiry(_prev: EnquiryState, formData: FormData): Pr
   if (message.length > 2000) fieldErrors.message = "Message is too long";
   if (!["email", "phone"].includes(preferredContact)) fieldErrors.preferredContact = "Choose how we should reach you";
 
-  if (courseId) {
-    const course = db.prepare("SELECT id FROM courses WHERE id = ? AND status = 'published'").get(courseId);
-    if (!course) fieldErrors.courseId = "Select a valid course";
+  if (courseId && !courseIsPublished(courseId)) fieldErrors.courseId = "Select a valid course";
+  if (Object.keys(fieldErrors).length) {
+    return {
+      ok: false,
+      fieldErrors,
+      values: { name, email, phone, topic, message, courseId: courseId ?? "", preferredContact },
+    };
   }
-  const values = { name, email, phone, topic, message, courseId: courseId ?? "", preferredContact };
-  if (Object.keys(fieldErrors).length) return { ok: false, fieldErrors, values };
 
   try {
-    db.prepare(
-      "INSERT INTO enquiries (id, name, email, phone, topic, course_id, preferred_contact, message, status, created_at) VALUES (?,?,?,?,?,?,?,?, 'new', ?)"
-    ).run(newId("enq"), name, email, phone || null, topic, courseId, preferredContact, message, new Date().toISOString());
+    insertEnquiry({ name, email, phone: phone || null, topic, course_id: courseId, preferred_contact: preferredContact, message });
   } catch {
-    return { ok: false, error: "Something went wrong while submitting your enquiry. Please try again.", values };
+    return {
+      ok: false,
+      error: "Something went wrong while submitting your enquiry. Please try again.",
+      values: { name, email, phone, topic, message, courseId: courseId ?? "", preferredContact },
+    };
   }
 
   return {
