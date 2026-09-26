@@ -1,18 +1,47 @@
 import Database from "better-sqlite3";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
-import { readFileSync } from "node:fs";
+import { seedDatabase } from "@/db/seed";
 
 export type Db = Database.Database;
 
+/**
+ * Resolves a writable directory for the SQLite file.
+ * Local/dev and traditional hosts use <cwd>/data; on read-only serverless
+ * filesystems (e.g. Vercel) the database lives in /tmp and is seeded on
+ * first boot. NOTE: /tmp is ephemeral per instance — for durable storage
+ * connect a managed database (Turso/LibSQL, Postgres, Supabase).
+ */
+function resolveDataDir(): string {
+  const candidates = [
+    process.env.KS_DATA_DIR,
+    path.join(process.cwd(), "data"),
+    path.join(os.tmpdir(), "kwikstudy"),
+  ].filter((dir): dir is string => typeof dir === "string" && dir.length > 0);
+  for (const dir of candidates) {
+    try {
+      fs.mkdirSync(dir, { recursive: true });
+      fs.accessSync(dir, fs.constants.W_OK);
+      return dir;
+    } catch {
+      /* read-only or unusable — try the next candidate */
+    }
+  }
+  throw new Error("KwikStudy: no writable directory available for the SQLite database");
+}
+
 function createDb(): Db {
-  const dataDir = path.join(process.cwd(), "data");
-  fs.mkdirSync(dataDir, { recursive: true });
-  const db = new Database(path.join(dataDir, "kwikstudy.db"));
+  const dir = resolveDataDir();
+  const file = path.join(dir, "kwikstudy.db");
+  const fresh = !fs.existsSync(file);
+  const db = new Database(file);
   db.pragma("journal_mode = WAL");
   db.pragma("foreign_keys = ON");
-  const schema = readFileSync(path.join(process.cwd(), "src", "db", "schema.sql"), "utf8");
-  db.exec(schema);
+  if (fresh) {
+    console.log(`[kwikstudy] fresh database at ${file} — seeding demo content`);
+    seedDatabase(db);
+  }
   return db;
 }
 

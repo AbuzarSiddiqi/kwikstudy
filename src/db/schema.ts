@@ -1,3 +1,8 @@
+/* KwikStudy relational schema — source of truth for the SQLite database.
+   Kept as a TypeScript module so the SQL is bundled into the server build
+   (required for serverless deploys where only traced files are available). */
+
+export const SCHEMA_SQL = `
 -- KwikStudy relational schema (SQLite)
 CREATE TABLE IF NOT EXISTS users (
   id            TEXT PRIMARY KEY,
@@ -244,3 +249,4 @@ CREATE INDEX IF NOT EXISTS idx_lessons_module ON lessons(module_id, idx);
 CREATE INDEX IF NOT EXISTS idx_modules_course ON modules(course_id, idx);
 CREATE INDEX IF NOT EXISTS idx_progress_user_course ON lesson_progress(user_id, course_id);
 CREATE INDEX IF NOT EXISTS idx_enrollments_user ON enrollments(user_id);
+`;

@@ -1,3 +1,13 @@
+function detectSiteUrl(): string {
+  const envUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (envUrl) return envUrl.replace(/\/$/, "");
+  const production = process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim();
+  if (production) return `https://${production.replace(/\/$/, "")}`;
+  const deployment = process.env.VERCEL_URL?.trim();
+  if (deployment) return `https://${deployment}`;
+  return "http://localhost:3000";
+}
+
 export const site = {
   name: "KwikStudy",
   tagline: "Practical programming education for the next generation of developers.",
@@ -7,7 +17,7 @@ export const site = {
   phone: "+91 80471 22600",
   hours: "Mon–Sat · 9:00 AM – 7:00 PM IST",
   established: 2021,
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
+  url: detectSiteUrl(),
 } as const;
 
 export const mainNav = [

@@ -32,6 +32,23 @@ The student account comes pre-seeded with a realistic learning record: Java Prog
 
 ---
 
+## Deploying (Vercel)
+
+The repo ships a `vercel.json` pinning `framework: "nextjs"`, so no Output Directory configuration is needed. On the first request after a cold start the server provisions its SQLite database and seeds the full demo content automatically — no manual seed step exists on the platform.
+
+Environment variables (all optional):
+
+| Variable                        | Purpose                                                              |
+| ------------------------------- | -------------------------------------------------------------------- |
+| `NEXT_PUBLIC_SITE_URL`          | Canonical/OG/sitemap base URL, e.g. `https://kwikstudy.vercel.app`    |
+| `PAYMENT_PROVIDER`              | `mock` (default) or `razorpay` once keys are implemented              |
+| `PAYMENT_WEBHOOK_SECRET`        | HMAC secret for the payment provider (set a real value in production) |
+| `KS_DATA_DIR`                   | Override the SQLite storage directory (defaults below)                |
+
+**Storage model:** the database lives in `<project>/data/` when the filesystem is writable, and falls back to `/tmp/kwikstudy/` on read-only serverless filesystems. `/tmp` is ephemeral per serverless instance: the demo content is re-seeded on every cold start (so the site always works), but user-created data (registrations, purchases, progress) does not survive instance restarts or replicate across instances. That is fine for a demo; for real production use, swap `src/lib/db.ts` for a managed database — Turso/LibSQL is a near drop-in for this schema, and the repository layer in `src/lib/queries.ts` is the single place queries live.
+
+---
+
 ## What's inside
 
 ### Public site
@@ -71,8 +88,8 @@ src/
     sitemap.ts, robots.ts, icon.svg, not-found, error
   components/          # design-system + feature components
   lib/
-    db.ts              # better-sqlite3 singleton + row types
-    schema.sql         # normalized relational schema
+    db.ts              # better-sqlite3 singleton + row types (auto-seeds when fresh)
+    schema.ts          # normalized relational schema (source of truth)
     queries.ts         # read layer (catalog, curriculum, progress)
     session.ts         # cookie sessions (httpOnly), guards
     auth-core.ts       # scrypt hashing, tokens, HMAC signing
@@ -80,8 +97,8 @@ src/
     highlight.ts       # zero-dependency syntax highlighter
     blocks.ts          # lesson content block model
     actions/           # server actions: auth, enquiry, checkout, learn, profile, admin
-scripts/seed.ts        # seed: categories, instructors, users, 7 courses, 3 programs, demo progress
-scripts/seed/courses/  # per-course curriculum content (authoring format)
+src/db/seed/           # seed core + per-course curriculum content (authoring format)
+scripts/seed.ts        # CLI wrapper that runs the seed against the local database
 ```
 
 ### Data model (normalized, relational)
@@ -103,7 +120,7 @@ No giant JSON blobs — relationships are real foreign keys with indexes; lesson
 
 ### Adding content
 
-Curriculum lives in `scripts/seed/courses/*.ts` using a small authoring DSL (`t`, `c`, `tip`, `vid`, `obj`, quiz + assignment builders). Add a course file, register it in `scripts/seed.ts`, run `npm run db:reset`. The site (catalogue, detail pages, search, sitemap, admin) picks it up automatically.
+Curriculum lives in `src/db/seed/courses/*.ts` using a small authoring DSL (`t`, `c`, `tip`, `vid`, `obj`, quiz + assignment builders). Add a course file, register it in `src/db/seed/index.ts`, run `npm run db:reset` (or just redeploy — fresh databases seed themselves). The site (catalogue, detail pages, search, sitemap, admin) picks it up automatically.
 
 ### Honest-by-design
 
